@@ -3,321 +3,260 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>POC · 2D→BIM</title>
+<title>2D→BIM Workbench</title>
 <style>
   :root {
-    --bg: #FAFAFA;
+    --bg: #FFFFFF;
     --surface: #F4F4F5;
+    --surface2: #FAFAFA;
     --border: #E4E4E7;
     --text: #18181B;
     --muted: #71717A;
     --primary: #18181B;
-    --primary-hover: #27272A;
-    --disabled: #A1A1AA;
     --accent: #2563EB;
+    --ok: #16A34A;
     --warn: #B45309;
     --error: #B91C1C;
+    --col: #D4D4D8;
+    --wall: #A1A1AA;
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
   body {
-    margin: 0;
     background: var(--bg);
     color: var(--text);
     font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .wrap {
-    max-width: 560px;
-    margin: 0 auto;
-    padding: 24px 16px 64px;
-  }
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 0 24px;
-  }
-  header h1 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-  }
-  #status-badge {
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--muted);
-  }
-  #status-badge.running { color: var(--accent); border-color: var(--accent); }
-  #status-badge.done { color: var(--text); border-color: var(--text); }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .card h2 {
     font-size: 13px;
-    font-weight: 600;
-    margin: 0 0 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .badge-beta {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    color: var(--muted);
-  }
-  .badge-soon {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    color: var(--disabled);
-  }
-  .dropzone {
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    padding: 24px 16px;
-    text-align: center;
-    color: var(--muted);
-    cursor: pointer;
-  }
-  .dropzone.drag { border-color: var(--text); color: var(--text); }
-  .summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-  }
-  .summary-row:last-child { border-bottom: none; }
-  .summary-row .k { color: var(--muted); }
-  .warn-box {
-    margin-top: 8px;
-    padding: 8px;
-    border-radius: 8px;
-    background: #FFFBEB;
-    border: 1px solid #FDE68A;
-    color: var(--warn);
-    font-size: 12px;
-  }
-  .field-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  select, input[type=text], input[type=number] {
-    font: inherit;
-    padding: 6px 8px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: #fff;
-    color: var(--text);
-  }
-  label.toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  label.toggle:last-child { border-bottom: none; }
-  label.toggle.disabled { color: var(--disabled); opacity: .5; }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 8px 0;
-  }
-  .chip {
-    font-size: 12px;
-    padding: 5px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text);
-    cursor: pointer;
-    user-select: none;
-  }
-  .chip.selected {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-  }
-  .chip.suggested:not(.selected) {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  table.levels {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-    margin-bottom: 8px;
-  }
-  table.levels th, table.levels td {
-    border-bottom: 1px solid var(--border);
-    padding: 6px 4px;
-    text-align: left;
-  }
-  table.levels input {
-    width: 100%;
-    padding: 4px 6px;
-    font-size: 12px;
-  }
-  .btn {
-    font: inherit;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .btn:hover { background: var(--surface); }
-  .btn-primary {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-    width: 100%;
-    padding: 10px;
-    font-weight: 600;
-  }
-  .btn-primary:hover { background: var(--primary-hover); }
-  .btn-primary:disabled {
-    background: var(--disabled);
-    border-color: var(--disabled);
-    cursor: not-allowed;
-  }
-  .btn-sm { padding: 4px 8px; font-size: 12px; }
-  .advanced-grid {
+    line-height: 1.45;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-rows: 48px 1fr 260px;
+    grid-template-columns: 288px 1fr 300px;
+    grid-template-areas:
+      "top    top    top"
+      "left   center right"
+      "bottom bottom bottom";
+    overflow: hidden;
   }
-  .advanced-grid .field-row { margin-bottom: 0; }
+  /* ── top bar ── */
+  #topbar {
+    grid-area: top;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--bg);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .logo {
+    width: 26px; height: 26px; border-radius: 6px; background: var(--primary);
+    color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 14px;
+  }
+  .brand .title { font-weight: 600; font-size: 14px; }
+  .brand .fname { color: var(--muted); font-size: 12px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pills { display: flex; gap: 6px; }
+  .pill {
+    font-size: 11px; padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  }
+  .pill.ok { color: var(--ok); border-color: #BBF7D0; background: #F0FDF4; }
+  .pill.run { color: var(--accent); border-color: #BFDBFE; background: #EFF6FF; }
+  .pill.off { color: var(--muted); }
+  .top-actions { display: flex; align-items: center; gap: 8px; }
+  /* ── panels ── */
+  #left { grid-area: left; border-right: 1px solid var(--border); }
+  #right { grid-area: right; border-left: 1px solid var(--border); }
+  #left, #right { overflow-y: auto; background: var(--bg); }
+  .sect { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .sect h3 {
+    font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 10px;
+  }
+  .kv { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+  .kv .k { color: var(--muted); }
+  /* ── center ── */
+  #center { grid-area: center; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .tabs { display: flex; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--border); }
+  .tab {
+    font-size: 12px; padding: 6px 12px; border: 1px solid var(--border); border-bottom: none;
+    border-radius: 6px 6px 0 0; background: var(--surface); color: var(--muted); cursor: pointer;
+  }
+  .tab.active { background: var(--bg); color: var(--text); font-weight: 600; }
+  .stage { flex: 1; display: flex; min-height: 0; }
+  .pane { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+  .pane + .pane { border-left: 1px solid var(--border); }
+  .pane-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--surface2);
+    font-size: 12px;
+  }
+  .pane-head .cnt { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pane-body { flex: 1; position: relative; min-height: 0; }
+  #plan-canvas, #three-canvas { display: block; width: 100%; height: 100%; }
+  #three-wrap { width: 100%; height: 100%; background: #FAFAFA; }
+  .viewer-note {
+    position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: var(--muted);
+    background: rgba(255,255,255,.85); padding: 2px 6px; border-radius: 4px; pointer-events: none;
+  }
+  .viewer-overlay {
+    position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+    font-size: 12px; background: rgba(250,250,250,.6); text-align: center; padding: 16px;
+  }
+  /* ── bottom ── */
+  #bottom { grid-area: bottom; display: grid; grid-template-columns: 1fr 320px; border-top: 1px solid var(--border); min-height: 0; }
   #log-panel {
-    background: #18181B;
-    color: #E4E4E7;
-    border-radius: 8px;
-    padding: 12px;
-    font-family: ui-monospace, "SF Mono", monospace;
-    font-size: 11px;
-    height: 240px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
+    background: #18181B; color: #E4E4E7; font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px; padding: 10px 12px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
   }
   .log-line.WARNING { color: #FBBF24; }
   .log-line.ERROR { color: #F87171; }
   .log-line.DEBUG { color: #A1A1AA; }
-  .downloads {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
+  .log-line.SUMMARY { color: #34D399; font-weight: 600; }
+  #summary-panel { padding: 12px 14px; border-left: 1px solid var(--border); overflow-y: auto; }
+  #summary-panel h3 { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .big { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .stat .lbl { font-size: 11px; color: var(--muted); }
+  /* ── controls ── */
+  .btn {
+    font: inherit; font-size: 12px; padding: 6px 11px; border-radius: 7px;
+    border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer;
   }
+  .btn:hover { background: var(--surface); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .btn-primary:hover { background: #1D4ED8; }
+  .btn-sm { padding: 3px 8px; font-size: 11px; }
+  select, input[type=text], input[type=number] {
+    font: inherit; font-size: 12px; padding: 5px 7px; border: 1px solid var(--border);
+    border-radius: 6px; background: #fff; color: var(--text); width: 100%;
+  }
+  .row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .dropzone {
+    border: 1px dashed var(--border); border-radius: 8px; padding: 14px 10px; text-align: center;
+    color: var(--muted); cursor: pointer; font-size: 12px;
+  }
+  .dropzone.drag { border-color: var(--text); color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+  .chip {
+    font-size: 11px; padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; cursor: pointer; user-select: none;
+  }
+  .chip.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .chip.suggested:not(.selected) { border-color: var(--accent); color: var(--accent); }
+  label.toggle { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; }
+  label.toggle.disabled { color: var(--muted); opacity: .55; }
+  .badge { font-size: 9px; padding: 1px 5px; border-radius: 5px; border: 1px solid var(--border); color: var(--muted); }
+  table.levels { width: 100%; border-collapse: collapse; font-size: 11px; }
+  table.levels th, table.levels td { border-bottom: 1px solid var(--border); padding: 4px 3px; text-align: left; }
+  table.levels input { padding: 3px 4px; }
+  .cand { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; margin-bottom: 6px; font-size: 12px; }
+  .cand.suggested { border-color: var(--accent); }
+  .cand .meta { color: var(--muted); font-size: 11px; }
+  .issue { font-size: 11px; padding: 4px 0; border-bottom: 1px solid var(--border); display: flex; gap: 6px; }
+  .issue .lv { font-weight: 700; }
+  .issue .lv.WARN { color: var(--warn); }
+  .issue .lv.INFO { color: var(--muted); }
+  .dl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .muted { color: var(--muted); }
   small.hint { color: var(--muted); font-size: 11px; }
+  .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>POC · 2D→BIM</h1>
-    <span id="status-badge">대기</span>
-  </header>
+  <!-- ── TOP BAR ── -->
+  <div id="topbar">
+    <div class="brand">
+      <div class="logo">B</div>
+      <span class="title">2D→BIM Workbench</span>
+      <span class="fname" id="fname">파일 없음</span>
+      <div class="pills">
+        <span class="pill off" id="pill-state">대기</span>
+        <span class="pill off" id="pill-valid">validation —</span>
+        <span class="pill off" id="pill-dda">DDA_BIM 미구현</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <input type="file" id="file-input" accept=".dxf" style="display:none">
+      <button class="btn" id="btn-upload">⬆ DXF</button>
+      <button class="btn" id="btn-sample">Sample</button>
+      <button class="btn btn-primary" id="run-btn" disabled>▶ Run</button>
+    </div>
+  </div>
 
-  <section class="card">
-    <h2>① 입력 파일</h2>
-    <div class="dropzone" id="dropzone">DXF 파일을 끌어놓거나 클릭해서 선택</div>
-    <input type="file" id="file-input" accept=".dxf" style="display:none">
-    <div id="analyze-summary" style="display:none; margin-top:12px;"></div>
-  </section>
+  <!-- ── LEFT SIDEBAR ── -->
+  <aside id="left">
+    <div class="sect">
+      <h3>입력</h3>
+      <div class="dropzone" id="dropzone">DXF 끌어놓기 / 클릭</div>
+      <div id="inv-summary" style="margin-top:10px;"></div>
+    </div>
 
-  <section class="card">
-    <h2>② 요소 매핑</h2>
-    <div>
-      <strong style="font-size:12px;">기둥 (column)</strong>
-      <div class="field-row">
-        <select id="column-mode">
+    <div class="sect">
+      <h3>Source Mapping</h3>
+      <strong style="font-size:12px;">기둥 소스</strong>
+      <div class="row" style="margin-top:6px;">
+        <select id="column-mode" style="width:110px;">
           <option value="block">block</option>
           <option value="layer">layer</option>
           <option value="path">path</option>
         </select>
       </div>
       <div class="chips" id="column-chips"></div>
-      <input type="text" id="column-path-input" placeholder="경로 텍스트 (콤마 구분)" style="display:none; width:100%;">
-    </div>
-    <div style="margin-top:16px;">
-      <strong style="font-size:12px;">벽 (wall)</strong>
-      <div class="field-row">
-        <select id="wall-mode">
+      <input type="text" id="column-path-input" placeholder="경로 텍스트(콤마)" style="display:none;">
+
+      <strong style="font-size:12px; display:block; margin-top:12px;">벽 소스</strong>
+      <div class="row" style="margin-top:6px;">
+        <select id="wall-mode" style="width:110px;">
           <option value="layer">layer</option>
           <option value="block">block</option>
           <option value="path">path</option>
         </select>
       </div>
       <div class="chips" id="wall-chips"></div>
-      <input type="text" id="wall-path-input" placeholder="경로 텍스트 (콤마 구분)" style="display:none; width:100%;">
-      <small class="hint">아무것도 선택하지 않으면 평면 전체 선분을 대상으로 한다.</small>
+      <input type="text" id="wall-path-input" placeholder="경로 텍스트(콤마)" style="display:none;">
+      <small class="hint">선택 없으면 평면 전체 선분 대상.</small>
     </div>
-  </section>
 
-  <section class="card">
-    <h2>③ 인식 요소</h2>
-    <label class="toggle">
-      <input type="checkbox" id="toggle-column" checked> 기둥
-    </label>
-    <label class="toggle">
-      <input type="checkbox" id="toggle-wall" checked> 벽 <span class="badge-beta">베타</span>
-    </label>
-    <label class="toggle disabled">
-      <input type="checkbox" disabled> 그리드 <span class="badge-soon">준비중</span>
-    </label>
-    <label class="toggle disabled">
-      <input type="checkbox" disabled> 슬래브 <span class="badge-soon">준비중</span>
-    </label>
-    <label class="toggle disabled">
-      <input type="checkbox" disabled> 보 <span class="badge-soon">준비중</span>
-    </label>
-    <label class="toggle disabled">
-      <input type="checkbox" disabled> 문/창 <span class="badge-soon">준비중</span>
-    </label>
-  </section>
+    <div class="sect">
+      <h3>인식 요소</h3>
+      <label class="toggle"><input type="checkbox" id="toggle-column" checked> 기둥</label>
+      <label class="toggle"><input type="checkbox" id="toggle-wall" checked> 벽 <span class="badge">베타</span></label>
+      <label class="toggle disabled"><input type="checkbox" disabled> 그리드 <span class="badge">스킵</span></label>
+      <label class="toggle disabled"><input type="checkbox" disabled> 슬래브/보/문창 <span class="badge">계획</span></label>
+    </div>
 
-  <section class="card">
-    <h2>④ 레벨/층고</h2>
-    <table class="levels" id="levels-table">
-      <thead><tr><th>이름</th><th>EL(mm)</th><th>층고(mm)</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <button class="btn btn-sm" id="add-level-row">+ 행 추가</button>
-    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
-      <small class="hint">여러 층 한번에</small>
-      <div class="field-row" style="margin-top:6px;">
-        <input type="number" id="batch-count" placeholder="N" style="width:60px;">
-        <input type="number" id="batch-start-el" placeholder="시작 EL(mm)" style="width:100px;">
-        <input type="number" id="batch-height" placeholder="층고(mm)" style="width:90px;" value="3500">
-        <input type="text" id="batch-prefix" placeholder="접두사" style="width:60px;" value="F">
-        <button class="btn btn-sm" id="batch-add">일괄추가</button>
+    <div class="sect">
+      <h3>Levels</h3>
+      <table class="levels" id="levels-table">
+        <thead><tr><th>이름</th><th>EL(mm)</th><th>층고(mm)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="row" style="margin-top:6px;">
+        <button class="btn btn-sm" id="add-level-row">+ 레벨</button>
+      </div>
+      <div style="margin-top:8px;">
+        <small class="hint">여러 층 한번에</small>
+        <div class="row" style="margin-top:4px; flex-wrap:wrap;">
+          <input type="number" id="batch-count" placeholder="N" style="width:48px;">
+          <input type="number" id="batch-start-el" placeholder="시작EL" style="width:70px;">
+          <input type="number" id="batch-height" placeholder="층고" style="width:60px;" value="3500">
+          <input type="text" id="batch-prefix" placeholder="접두" style="width:44px;" value="F">
+          <button class="btn btn-sm" id="batch-add">추가</button>
+        </div>
       </div>
     </div>
-  </section>
 
-  <section class="card">
-    <h2>⑤ 고급</h2>
-    <div class="advanced-grid">
-      <label class="field-row"><input type="checkbox" id="adv-recenter" checked> recenter</label>
-      <div class="field-row"><span>dedup_tol_mm</span><input type="number" id="adv-dedup-tol" value="100" style="width:80px;"></div>
-      <div class="field-row">
-        <span>log_level</span>
+    <div class="sect">
+      <h3>Advanced</h3>
+      <label class="toggle"><input type="checkbox" id="adv-recenter" checked> Recenter</label>
+      <div class="row"><span style="width:96px;">Dedup tol(mm)</span><input type="number" id="adv-dedup-tol" value="100"></div>
+      <div class="row"><span style="width:96px;">Log level</span>
         <select id="adv-log-level">
           <option value="DEBUG" selected>DEBUG</option>
           <option value="INFO">INFO</option>
@@ -325,183 +264,251 @@
         </select>
       </div>
     </div>
-  </section>
+  </aside>
 
-  <button class="btn-primary" id="run-btn" disabled>구축 실행</button>
-
-  <section class="card" id="run-section" style="display:none; margin-top:16px;">
-    <h2>실행 로그</h2>
-    <div id="log-panel"></div>
-    <div id="run-result"></div>
-    <div class="downloads" id="downloads" style="display:none;">
-      <a class="btn btn-sm" href="/download/model.ifc" download>model.ifc</a>
-      <a class="btn btn-sm" href="/download/model_ir.json" download>model_ir.json</a>
-      <a class="btn btn-sm" href="/download/debug.log" download>debug.log</a>
+  <!-- ── CENTER ── -->
+  <main id="center">
+    <div class="tabs">
+      <div class="tab active" data-tab="split">Plan + 3D</div>
+      <div class="tab" data-tab="plan">Plan Audit</div>
+      <div class="tab" data-tab="three">3D Preview</div>
     </div>
-  </section>
-</div>
+    <div class="stage" id="stage">
+      <div class="pane" id="pane-plan">
+        <div class="pane-head"><span>Plan Audit</span><span class="cnt" id="plan-cnt">columns 0 · walls 0</span></div>
+        <div class="pane-body">
+          <canvas id="plan-canvas"></canvas>
+          <div class="viewer-overlay" id="plan-overlay">Run 후 IR이 생성되면 평면 감사도가 표시된다.</div>
+        </div>
+      </div>
+      <div class="pane" id="pane-three">
+        <div class="pane-head"><span>3D IFC Preview</span><span class="cnt" id="three-cnt">meshes 0 · tris 0</span></div>
+        <div class="pane-body">
+          <div id="three-wrap"></div>
+          <div class="viewer-note" id="three-note"></div>
+          <div class="viewer-overlay" id="three-overlay">Run 후 model.ifc가 three.js로 렌더된다.</div>
+        </div>
+      </div>
+    </div>
+  </main>
 
-<script>
-let inventory = null;
-let serverPath = null;
-let columnSuggestion = null;
-let wallSuggestion = null;
+  <!-- ── RIGHT SIDEBAR ── -->
+  <aside id="right">
+    <div class="sect">
+      <h3>Inventory</h3>
+      <div id="inv-detail"><span class="muted">파일을 분석하면 채워진다.</span></div>
+    </div>
+    <div class="sect">
+      <h3>Column Candidates</h3>
+      <div id="candidates"><span class="muted">—</span></div>
+    </div>
+    <div class="sect">
+      <h3>Issues</h3>
+      <div id="issues"><span class="muted">—</span></div>
+    </div>
+  </aside>
 
-const statusBadge = document.getElementById('status-badge');
-function setStatus(text, cls) {
-  statusBadge.textContent = text;
-  statusBadge.className = cls || '';
+  <!-- ── BOTTOM ── -->
+  <div id="bottom">
+    <div id="log-panel"></div>
+    <div id="summary-panel">
+      <h3>Run Summary</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="lbl">기둥</div><div class="big" id="sum-col">—</div></div>
+        <div class="stat"><div class="lbl">벽</div><div class="big" id="sum-wall">—</div></div>
+      </div>
+      <div class="kv"><span class="k">validation</span><span id="sum-valid">—</span></div>
+      <div class="kv"><span class="k">DDA_BIM Pset</span><span class="muted">미구현</span></div>
+      <div class="kv"><span class="k">IFC entities</span><span id="sum-ent">—</span></div>
+      <div class="kv"><span class="k">time</span><span id="sum-time">—</span></div>
+      <div class="dl" id="downloads" style="display:none;">
+        <a class="btn btn-sm" href="/download/model.ifc" download>model.ifc</a>
+        <a class="btn btn-sm" href="/download/model_ir.json" download>model_ir.json</a>
+        <a class="btn btn-sm" href="/download/debug.log" download>debug.log</a>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+let inventory = null, serverPath = null, columnSuggestion = null, wallSuggestion = null;
+const $ = id => document.getElementById(id);
+
+// ───────────────────────── status pills ─────────────────────────
+function setState(text, cls) { const p = $('pill-state'); p.textContent = text; p.className = 'pill ' + (cls || 'off'); }
+function setValid(v) {
+  const p = $('pill-valid');
+  if (!v) { p.textContent = 'validation —'; p.className = 'pill off'; return; }
+  const ok = String(v).toUpperCase() === 'PASS';
+  p.textContent = 'validation ' + v;
+  p.className = 'pill ' + (ok ? 'ok' : 'off');
 }
 
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('file-input');
+// ───────────────────────── analyze ─────────────────────────
+const dropzone = $('dropzone'), fileInput = $('file-input');
+$('btn-upload').addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
 dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag');
+  e.preventDefault(); dropzone.classList.remove('drag');
   if (e.dataTransfer.files.length) analyzeFile(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) analyzeFile(fileInput.files[0]);
-});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) analyzeFile(fileInput.files[0]); });
+$('btn-sample').addEventListener('click', loadSample);
 
 async function analyzeFile(file) {
   dropzone.textContent = `분석 중... (${file.name})`;
-  const form = new FormData();
-  form.append('file', file);
-  const res = await fetch('/analyze', { method: 'POST', body: form });
-  if (!res.ok) {
-    dropzone.textContent = '분석 실패. 다시 시도하라.';
-    return;
-  }
-  inventory = await res.json();
-  serverPath = inventory.server_path;
-  dropzone.textContent = `${inventory.filename} 분석 완료 (다른 파일로 교체하려면 클릭)`;
-  renderAnalyzeSummary();
-  renderChips();
-  document.getElementById('run-btn').disabled = false;
+  const form = new FormData(); form.append('file', file);
+  let res;
+  try { res = await fetch('/analyze', { method: 'POST', body: form }); }
+  catch (e) { dropzone.textContent = '분석 실패(네트워크).'; return; }
+  if (!res.ok) { dropzone.textContent = '분석 실패. 다시 시도하라.'; return; }
+  applyInventory(await res.json());
 }
 
-function renderAnalyzeSummary() {
-  const el = document.getElementById('analyze-summary');
-  el.style.display = 'block';
+async function loadSample() {
+  dropzone.textContent = '샘플 분석 중...';
+  try {
+    const res = await fetch('/sample');
+    if (!res.ok) { dropzone.textContent = '샘플 없음.'; return; }
+    applyInventory(await res.json());
+  } catch (e) { dropzone.textContent = '샘플 로드 실패.'; }
+}
+
+function applyInventory(inv) {
+  inventory = inv; serverPath = inv.server_path;
+  $('fname').textContent = inv.filename || '(이름없음)';
+  dropzone.textContent = `${inv.filename} 분석 완료`;
+  renderInvSummary(); renderInvDetail(); renderCandidates(); renderIssues(); renderChips();
+  $('run-btn').disabled = false;
+  setState('분석됨', 'off');
+}
+
+function renderInvSummary() {
   const rows = [
-    ['단위 (INSUNITS)', inventory.units],
+    ['단위(INSUNITS)', inventory.units],
     ['패러다임', inventory.paradigm],
-    ['레이어 수', `${inventory.layer_total} (${inventory.layer_state})`],
-    ['블록 수', inventory.block_total],
+    ['레이어', `${inventory.layer_total} (${inventory.layer_state})`],
+    ['블록', inventory.block_total],
   ];
-  let html = rows.map(([k, v]) => `<div class="summary-row"><span class="k">${k}</span><span>${v}</span></div>`).join('');
-  el.innerHTML = html;
-
-  if (inventory.plane_hint && inventory.plane_hint.length > 1) {
-    const warn = document.createElement('div');
-    warn.className = 'warn-box';
-    warn.textContent = `평면 인스턴스 후보가 ${inventory.plane_hint.length}종 발견됨 — 다중 평면일 수 있다 (자동 선택 UI 없음).`;
-    el.appendChild(warn);
-  }
+  $('inv-summary').innerHTML = rows.map(([k, v]) =>
+    `<div class="kv"><span class="k">${k}</span><span>${v ?? '—'}</span></div>`).join('');
 }
 
-function chipLabel(kind, candidate) {
-  if (kind === 'layer') return `${candidate.short} (${candidate.count})`;
-  return `${candidate.name}${candidate.w ? ` ${candidate.w}x${candidate.d}` : ''} (${candidate.count})`;
+function renderInvDetail() {
+  const pct = Math.round((inventory.layer_default_ratio || 0) * 100);
+  const ph = inventory.plane_hint || [];
+  const planeStr = ph.length
+    ? `${ph.length}종 → 대표 1, ${ph[0].count} hits`
+    : '—';
+  const rows = [
+    ['레이어', `${inventory.layer_total}개 (${inventory.layer_state})`],
+    ['기본 레이어 비율', `${pct}%`],
+    ['블록', `${inventory.block_total}개`],
+    ['평면 힌트', planeStr],
+  ];
+  $('inv-detail').innerHTML = rows.map(([k, v]) =>
+    `<div class="kv"><span class="k">${k}</span><span>${v}</span></div>`).join('');
 }
 
+function renderCandidates() {
+  const blocks = (inventory.blocks || []).filter(b => b.w || b.profile).slice(0, 12);
+  const suggestVals = (columnSuggestion && columnSuggestion.mode === 'block')
+    ? (columnSuggestion.values || []).map(v => v.toLowerCase()) : [];
+  if (!blocks.length) { $('candidates').innerHTML = '<span class="muted">블록 후보 없음</span>'; return; }
+  $('candidates').innerHTML = blocks.map(b => {
+    const sug = suggestVals.some(v => b.name.toLowerCase().includes(v));
+    const meta = b.profile === 'circle'
+      ? `circle · R${b.w || '?'}mm`
+      : `${b.profile || 'rect'} · ${b.w || '?'}×${b.d || '?'}mm`;
+    return `<div class="cand ${sug ? 'suggested' : ''}"><span>${b.name}</span><span class="meta">${meta} · ×${b.count}</span></div>`;
+  }).join('');
+}
+
+function renderIssues() {
+  const issues = [];
+  issues.push({ level: 'INFO', msg: `Stage0 inventory: ${inventory.paradigm}, layers=${inventory.layer_total}, blocks=${inventory.block_total}` });
+  if ((inventory.plane_hint || []).length > 1)
+    issues.push({ level: 'WARN', msg: `평면 인스턴스 후보 ${inventory.plane_hint.length}종 — 다중 평면 가능(자동선택 미구현)` });
+  if (inventory.layer_state !== 'meaningful')
+    issues.push({ level: 'WARN', msg: `레이어 dead(기본비율 ${Math.round((inventory.layer_default_ratio||0)*100)}%) — block/path 소스 권장` });
+  $('issues').innerHTML = issues.map(i =>
+    `<div class="issue"><span class="lv ${i.level}">${i.level}</span><span>${i.msg}</span></div>`).join('');
+}
+
+// ───────────────────────── source chips ─────────────────────────
+function chipLabel(kind, c) {
+  if (kind === 'layer') return `${c.short} (${c.count})`;
+  return `${c.name}${c.w ? ` ${c.w}x${c.d}` : ''} (${c.count})`;
+}
 function renderChips() {
   columnSuggestion = inventory.suggestions.column;
   wallSuggestion = inventory.suggestions.wall;
-  document.getElementById('column-mode').value = columnSuggestion.mode;
-  document.getElementById('wall-mode').value = wallSuggestion.mode;
-  renderChipGroup('column');
-  renderChipGroup('wall');
+  $('column-mode').value = columnSuggestion.mode;
+  $('wall-mode').value = wallSuggestion.mode;
+  renderChipGroup('column'); renderChipGroup('wall');
 }
-
 function candidatesFor(kind) {
-  const mode = document.getElementById(`${kind}-mode`).value;
-  if (mode === 'layer') {
-    return (inventory.layers || []).filter(l => l.valid).map(l => ({ value: l.short, label: chipLabel('layer', l) }));
-  }
-  if (mode === 'block') {
-    return (inventory.blocks || []).map(b => ({ value: b.name, label: chipLabel('block', b) }));
-  }
+  const mode = $(`${kind}-mode`).value;
+  if (mode === 'layer') return (inventory.layers || []).filter(l => l.valid).map(l => ({ value: l.short, label: chipLabel('layer', l) }));
+  if (mode === 'block') return (inventory.blocks || []).map(b => ({ value: b.name, label: chipLabel('block', b) }));
   return [];
 }
-
 function renderChipGroup(kind) {
-  const mode = document.getElementById(`${kind}-mode`).value;
-  const chipsEl = document.getElementById(`${kind}-chips`);
-  const pathInput = document.getElementById(`${kind}-path-input`);
+  const mode = $(`${kind}-mode`).value;
+  const chipsEl = $(`${kind}-chips`), pathInput = $(`${kind}-path-input`);
   chipsEl.style.display = mode === 'path' ? 'none' : 'flex';
   pathInput.style.display = mode === 'path' ? 'block' : 'none';
-
   if (mode === 'path') { chipsEl.innerHTML = ''; return; }
-
   const suggestion = kind === 'column' ? columnSuggestion : wallSuggestion;
   const suggestedValues = (suggestion && suggestion.mode === mode) ? (suggestion.values || []) : [];
-  const cands = candidatesFor(kind);
-  const seen = new Set();
-  chipsEl.innerHTML = '';
-  cands.forEach(c => {
+  const seen = new Set(); chipsEl.innerHTML = '';
+  candidatesFor(kind).forEach(c => {
     const key = c.value.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
+    if (seen.has(key)) return; seen.add(key);
     const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.dataset.value = c.value;
-    chip.textContent = c.label;
-    if (suggestedValues.some(v => v.toLowerCase() === key)) {
-      chip.classList.add('selected', 'suggested');
-    }
+    chip.className = 'chip'; chip.dataset.value = c.value; chip.textContent = c.label;
+    if (suggestedValues.some(v => v.toLowerCase() === key)) chip.classList.add('selected', 'suggested');
     chip.addEventListener('click', () => chip.classList.toggle('selected'));
     chipsEl.appendChild(chip);
   });
 }
-
-document.getElementById('column-mode').addEventListener('change', () => renderChipGroup('column'));
-document.getElementById('wall-mode').addEventListener('change', () => renderChipGroup('wall'));
-
+$('column-mode').addEventListener('change', () => renderChipGroup('column'));
+$('wall-mode').addEventListener('change', () => renderChipGroup('wall'));
 function sourceOf(kind) {
-  const mode = document.getElementById(`${kind}-mode`).value;
+  const mode = $(`${kind}-mode`).value;
   if (mode === 'path') {
-    const text = document.getElementById(`${kind}-path-input`).value.trim();
-    const values = text ? text.split(',').map(s => s.trim()).filter(Boolean) : [];
-    return { mode, values };
+    const text = $(`${kind}-path-input`).value.trim();
+    return { mode, values: text ? text.split(',').map(s => s.trim()).filter(Boolean) : [] };
   }
-  const chipsEl = document.getElementById(`${kind}-chips`);
-  const values = Array.from(chipsEl.querySelectorAll('.chip.selected')).map(c => c.dataset.value);
+  const values = Array.from($(`${kind}-chips`).querySelectorAll('.chip.selected')).map(c => c.dataset.value);
   return { mode, values };
 }
 
-// ── 레벨 테이블 ──────────────────────────────────
+// ───────────────────────── levels ─────────────────────────
 const levelsBody = document.querySelector('#levels-table tbody');
-
 function addLevelRow(name, el, height) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><input type="text" class="lv-name" value="${name ?? ''}"></td>
     <td><input type="number" class="lv-el" value="${el ?? 0}"></td>
     <td><input type="number" class="lv-height" value="${height ?? 3500}"></td>
-    <td><button class="btn btn-sm lv-remove">삭제</button></td>
-  `;
+    <td><button class="btn btn-sm lv-remove">×</button></td>`;
   tr.querySelector('.lv-remove').addEventListener('click', () => tr.remove());
   levelsBody.appendChild(tr);
 }
 addLevelRow('B2', -7000, 3500);
-
-document.getElementById('add-level-row').addEventListener('click', () => addLevelRow('', 0, 3500));
-
-document.getElementById('batch-add').addEventListener('click', () => {
-  const n = parseInt(document.getElementById('batch-count').value, 10) || 0;
-  const startEl = parseFloat(document.getElementById('batch-start-el').value) || 0;
-  const height = parseFloat(document.getElementById('batch-height').value) || 3500;
-  const prefix = document.getElementById('batch-prefix').value || 'F';
-  for (let i = 0; i < n; i++) {
-    addLevelRow(`${prefix}${i + 1}`, startEl + i * height, height);
-  }
+$('add-level-row').addEventListener('click', () => addLevelRow('', 0, 3500));
+$('batch-add').addEventListener('click', () => {
+  const n = parseInt($('batch-count').value, 10) || 0;
+  const startEl = parseFloat($('batch-start-el').value) || 0;
+  const height = parseFloat($('batch-height').value) || 3500;
+  const prefix = $('batch-prefix').value || 'F';
+  for (let i = 0; i < n; i++) addLevelRow(`${prefix}${i + 1}`, startEl + i * height, height);
 });
-
 function collectLevels() {
   return Array.from(levelsBody.querySelectorAll('tr')).map(tr => ({
     name: tr.querySelector('.lv-name').value || 'L',
@@ -510,113 +517,305 @@ function collectLevels() {
   }));
 }
 
-// ── config 빌드 ──────────────────────────────────
+// ───────────────────────── config ─────────────────────────
 function buildConfig() {
   return {
     input_dxf: serverPath,
     units: inventory ? inventory.units : 'mm',
     ifc_schema: 'IFC4',
     build_elements: {
-      column: document.getElementById('toggle-column').checked,
-      wall: document.getElementById('toggle-wall').checked,
+      column: $('toggle-column').checked, wall: $('toggle-wall').checked,
       grid: false, slab: false, beam: false, opening: false,
     },
     column_source: sourceOf('column'),
     wall_source: sourceOf('wall'),
     levels: collectLevels(),
     repeat_floors: { enabled: false, count: 1, start_elevation_mm: 0, height_mm: 3500, name_prefix: 'F' },
-    column_footprint_min_mm: 200,
-    column_footprint_max_mm: 2000,
-    footprint_exclude_text: true,
-    footprint_exclude_layers: ['DEFPOINT', 'DEFPOINTS'],
+    column_footprint_min_mm: 200, column_footprint_max_mm: 2000,
+    footprint_exclude_text: true, footprint_exclude_layers: ['DEFPOINT', 'DEFPOINTS'],
     column_name_patterns: ['기둥', 'col'],
-    wall_thickness_min_mm: 100,
-    wall_thickness_max_mm: 600,
-    wall_parallel_tol_deg: 1.0,
-    wall_overlap_min_ratio: 0.3,
-    wall_min_length_mm: 150,
-    wall_join_gap_mm: 300,
-    wall_join_extend_mm: 400,
-    recenter: document.getElementById('adv-recenter').checked,
-    dedup_tol_mm: parseFloat(document.getElementById('adv-dedup-tol').value) || 100,
+    wall_thickness_min_mm: 100, wall_thickness_max_mm: 600,
+    wall_parallel_tol_deg: 1.0, wall_overlap_min_ratio: 0.3,
+    wall_min_length_mm: 150, wall_join_gap_mm: 300, wall_join_extend_mm: 400,
+    recenter: $('adv-recenter').checked,
+    dedup_tol_mm: parseFloat($('adv-dedup-tol').value) || 100,
     depth_guard: 10,
-    log_level: document.getElementById('adv-log-level').value,
+    log_level: $('adv-log-level').value,
     out_dir: 'out',
   };
 }
 
-// ── 실행 + SSE ───────────────────────────────────
-const logPanel = document.getElementById('log-panel');
-const runBtn = document.getElementById('run-btn');
-
+// ───────────────────────── run + SSE ─────────────────────────
+const logPanel = $('log-panel'), runBtn = $('run-btn');
 function appendLog(line) {
   const div = document.createElement('div');
   div.className = 'log-line';
-  const m = line.match(/\s(DEBUG|INFO|WARNING|ERROR)\s/);
-  if (m) div.classList.add(m[1]);
+  if (line.includes('[SUMMARY]')) div.classList.add('SUMMARY');
+  else { const m = line.match(/\s(DEBUG|INFO|WARNING|ERROR)\s/); if (m) div.classList.add(m[1]); }
   div.textContent = line;
   logPanel.appendChild(div);
   logPanel.scrollTop = logPanel.scrollHeight;
+}
+function parseSummary(s) {
+  const out = {};
+  let m;
+  if ((m = s.match(/columns=(\d+)/))) out.columns = +m[1];
+  if ((m = s.match(/walls=(\d+)/))) out.walls = +m[1];
+  if ((m = s.match(/validation=(\w+)/))) out.validation = m[1];
+  if ((m = s.match(/ifc_entities=(\d+)/))) out.entities = +m[1];
+  if ((m = s.match(/time=([\d.]+s)/))) out.time = m[1];
+  return out;
 }
 
 runBtn.addEventListener('click', async () => {
   if (!serverPath) return;
   runBtn.disabled = true;
-  setStatus('실행중', 'running');
-  document.getElementById('run-section').style.display = 'block';
-  document.getElementById('downloads').style.display = 'none';
-  document.getElementById('run-result').textContent = '';
+  setState('실행중', 'run'); setValid(null);
+  $('downloads').style.display = 'none';
   logPanel.innerHTML = '';
 
-  const cfg = buildConfig();
   const res = await fetch('/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ config: cfg }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config: buildConfig() }),
   });
+  if (res.status === 409) { appendLog('이미 실행 중인 작업이 있다.'); setState('대기'); runBtn.disabled = false; return; }
 
-  if (res.status === 409) {
-    appendLog('이미 실행 중인 작업이 있다.');
-    setStatus('대기');
-    runBtn.disabled = false;
-    return;
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
+  const reader = res.body.getReader(), decoder = new TextDecoder();
   let buf = '';
-
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
     buf += decoder.decode(value, { stream: true });
-    const events = buf.split('\n\n');
-    buf = events.pop();
+    const events = buf.split('\n\n'); buf = events.pop();
     for (const evt of events) {
-      const lines = evt.split('\n');
-      let eventName = 'message';
-      let dataStr = '';
-      for (const l of lines) {
+      let eventName = 'message', dataStr = '';
+      for (const l of evt.split('\n')) {
         if (l.startsWith('event:')) eventName = l.slice(6).trim();
         if (l.startsWith('data:')) dataStr = l.slice(5).trim();
       }
       if (!dataStr) continue;
       const data = JSON.parse(dataStr);
       if (eventName === 'done') {
-        setStatus('완료', 'done');
-        document.getElementById('run-result').textContent = data.summary;
-        document.getElementById('downloads').style.display = 'flex';
+        const sum = parseSummary(data.summary || '');
+        setState('완료', 'ok'); setValid(sum.validation || 'PASS');
+        $('sum-col').textContent = sum.columns ?? '—';
+        $('sum-wall').textContent = sum.walls ?? '—';
+        $('sum-valid').textContent = sum.validation || '—';
+        $('sum-ent').textContent = sum.entities ?? '—';
+        $('sum-time').textContent = sum.time || '—';
+        $('downloads').style.display = 'flex';
         runBtn.disabled = false;
+        loadResultViewers();   // IR 2D + IFC 3D
       } else if (eventName === 'failed') {
-        setStatus('실패');
-        appendLog(`[FAILED] ${data.error}`);
-        runBtn.disabled = false;
-      } else {
-        appendLog(data.line);
-      }
+        setState('실패'); appendLog(`[FAILED] ${data.error}`); runBtn.disabled = false;
+      } else { appendLog(data.line); }
     }
   }
 });
+
+// ───────────────────────── tabs ─────────────────────────
+const panePlan = $('pane-plan'), paneThree = $('pane-three');
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  const m = t.dataset.tab;
+  panePlan.style.display = (m === 'three') ? 'none' : 'flex';
+  paneThree.style.display = (m === 'plan') ? 'none' : 'flex';
+  resizeThree(); drawPlan();
+}));
+
+// ───────────────────────── result loaders ─────────────────────────
+let lastIR = null;
+async function loadResultViewers() {
+  try {
+    const res = await fetch('/ir', { cache: 'no-store' });
+    if (res.ok) { lastIR = await res.json(); drawPlan(); }
+  } catch (e) { /* ignore */ }
+  loadThree();   // web-ifc → 실패 시 IR 폴백
+}
+
+// ───── 2D Plan Audit (canvas) ─────
+const planCanvas = $('plan-canvas');
+function drawPlan() {
+  if (!lastIR) return;
+  $('plan-overlay').style.display = 'none';
+  const cols = lastIR.columns || [], walls = lastIR.walls || [];
+  $('plan-cnt').textContent = `columns ${cols.length} · walls ${walls.length}`;
+  const ctx = planCanvas.getContext('2d');
+  const rect = planCanvas.getBoundingClientRect();
+  if (rect.width === 0) return;
+  const dpr = window.devicePixelRatio || 1;
+  planCanvas.width = rect.width * dpr; planCanvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+
+  // bbox
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const acc = (x, y) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); };
+  cols.forEach(c => acc(c.x_mm, c.y_mm));
+  walls.forEach(w => { acc(w.start_mm[0], w.start_mm[1]); acc(w.end_mm[0], w.end_mm[1]); });
+  if (!isFinite(minX)) return;
+  const pad = 24, w = rect.width - pad * 2, h = rect.height - pad * 2;
+  const s = Math.min(w / (maxX - minX || 1), h / (maxY - minY || 1));
+  const ox = pad + (w - (maxX - minX) * s) / 2, oy = pad + (h - (maxY - minY) * s) / 2;
+  const tx = x => ox + (x - minX) * s;
+  const ty = y => rect.height - (oy + (y - minY) * s);  // flip Y
+
+  // walls (centerline)
+  ctx.strokeStyle = '#52525B'; ctx.lineWidth = 1;
+  walls.forEach(wl => {
+    ctx.beginPath(); ctx.moveTo(tx(wl.start_mm[0]), ty(wl.start_mm[1]));
+    ctx.lineTo(tx(wl.end_mm[0]), ty(wl.end_mm[1])); ctx.stroke();
+  });
+  // columns
+  ctx.fillStyle = 'rgba(37,99,235,.18)'; ctx.strokeStyle = '#2563EB';
+  cols.forEach(c => {
+    const cx = tx(c.x_mm), cy = ty(c.y_mm);
+    if (c.profile === 'circle') {
+      const r = Math.max(2, (c.r_mm || c.w_mm / 2) * s);
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } else {
+      const ww = Math.max(2, (c.w_mm || 400) * s), dd = Math.max(2, (c.d_mm || 400) * s);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(-(c.rot_deg || 0) * Math.PI / 180);
+      ctx.fillRect(-ww / 2, -dd / 2, ww, dd); ctx.strokeRect(-ww / 2, -dd / 2, ww, dd); ctx.restore();
+    }
+  });
+}
+window.addEventListener('resize', () => { drawPlan(); resizeThree(); });
+
+// ───── 3D viewer (three.js + web-ifc, IR fallback) ─────
+let renderer, scene, camera, controls, modelGroup, threeReady = false;
+function initThree() {
+  if (threeReady) return;
+  const wrap = $('three-wrap');
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setClearColor(0xFAFAFA, 1);
+  wrap.appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
+  camera.position.set(40, 40, 40);
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.7); dir.position.set(50, 80, 30); scene.add(dir);
+  scene.add(new THREE.GridHelper(200, 40, 0xD4D4D8, 0xE4E4E7));
+  threeReady = true;
+  resizeThree();
+  (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+}
+function resizeThree() {
+  if (!threeReady) return;
+  const wrap = $('three-wrap'); const r = wrap.getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return;
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+}
+function resetModelGroup() {
+  if (modelGroup) scene.remove(modelGroup);
+  modelGroup = new THREE.Group();
+  modelGroup.rotation.x = -Math.PI / 2;  // Z-up(IFC) → Y-up(three)
+  scene.add(modelGroup);
+}
+function fitCamera() {
+  const box = new THREE.Box3().setFromObject(modelGroup);
+  if (box.isEmpty()) return;
+  const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+  const maxd = Math.max(size.x, size.y, size.z) || 10;
+  controls.target.copy(center);
+  camera.position.set(center.x + maxd * 0.9, center.y + maxd * 0.9, center.z + maxd * 0.9);
+  camera.near = maxd / 100; camera.far = maxd * 50; camera.updateProjectionMatrix();
+}
+const COL_MAT = () => new THREE.MeshLambertMaterial({ color: 0xD4D4D8 });
+const WALL_MAT = () => new THREE.MeshLambertMaterial({ color: 0xA1A1AA });
+
+async function loadThree() {
+  initThree();
+  $('three-overlay').style.display = 'grid';
+  $('three-overlay').textContent = 'model.ifc 로딩(web-ifc)...';
+  resetModelGroup();
+  try {
+    await loadViaWebIfc();
+    $('three-note').textContent = 'web-ifc';
+  } catch (e) {
+    console.warn('web-ifc 실패, IR 박스 폴백:', e);
+    resetModelGroup();
+    loadViaIR();
+    $('three-note').textContent = '(fallback: IR boxes)';
+  }
+  fitCamera();
+  $('three-overlay').style.display = 'none';
+  window.__wb = { scene, camera, controls, fitCamera, get mg(){ return modelGroup; },
+    bbox(){ const b=new THREE.Box3().setFromObject(modelGroup); const s=b.getSize(new THREE.Vector3()); return [s.x,s.y,s.z].map(v=>Math.round(v)); } };
+}
+window.__loadViewers = loadResultViewers;
+
+async function loadViaWebIfc() {
+  const WebIFC = await import('https://unpkg.com/web-ifc@0.0.57/web-ifc-api.js');
+  const api = new WebIFC.IfcAPI();
+  api.SetWasmPath('https://unpkg.com/web-ifc@0.0.57/');
+  await api.Init();
+  const buf = new Uint8Array(await (await fetch('/download/model.ifc', { cache: 'no-store' })).arrayBuffer());
+  const modelID = api.OpenModel(buf);
+  let meshes = 0, tris = 0;
+  api.StreamAllMeshes(modelID, (mesh) => {
+    const placed = mesh.geometries;
+    let type = 0;
+    try { type = api.GetLineType(modelID, mesh.expressID); } catch (e) {}
+    const isWall = (type === WebIFC.IFCWALL || type === WebIFC.IFCWALLSTANDARDCASE);
+    for (let i = 0; i < placed.size(); i++) {
+      const pg = placed.get(i);
+      const geom = api.GetGeometry(modelID, pg.geometryExpressID);
+      const verts = api.GetVertexArray(geom.GetVertexData(), geom.GetVertexDataSize());
+      const idx = api.GetIndexArray(geom.GetIndexData(), geom.GetIndexDataSize());
+      const n = verts.length / 6;
+      const pos = new Float32Array(n * 3);
+      for (let v = 0; v < n; v++) { pos[v*3] = verts[v*6]; pos[v*3+1] = verts[v*6+1]; pos[v*3+2] = verts[v*6+2]; }
+      const bg = new THREE.BufferGeometry();
+      bg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      bg.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
+      bg.computeVertexNormals();
+      const m = new THREE.Mesh(bg, isWall ? WALL_MAT() : COL_MAT());
+      m.applyMatrix4(new THREE.Matrix4().fromArray(pg.flatTransformation));
+      modelGroup.add(m);
+      meshes++; tris += idx.length / 3;
+    }
+  });
+  api.CloseModel(modelID);
+  if (meshes === 0) throw new Error('web-ifc: 0 meshes');
+  $('three-cnt').textContent = `meshes ${meshes} · tris ${tris.toLocaleString()}`;
+}
+
+function loadViaIR() {
+  if (!lastIR) { $('three-cnt').textContent = 'meshes 0 · tris 0'; return; }
+  const mm = 0.001;
+  const levelMap = {}; (lastIR.levels || []).forEach(l => levelMap[l.name] = l);
+  let meshes = 0, tris = 0;
+  (lastIR.columns || []).forEach(c => {
+    const lv = levelMap[c.level] || { elevation_mm: 0, height_mm: 3500 };
+    const h = (lv.height_mm || 3500) * mm;
+    let geo;
+    if (c.profile === 'circle') geo = new THREE.CylinderGeometry((c.r_mm||c.w_mm/2)*mm, (c.r_mm||c.w_mm/2)*mm, h, 16);
+    else geo = new THREE.BoxGeometry((c.w_mm||400)*mm, (c.d_mm||400)*mm, h);
+    const m = new THREE.Mesh(geo, COL_MAT());
+    if (c.profile !== 'circle') m.rotation.z = (c.rot_deg||0)*Math.PI/180;
+    else m.rotation.x = Math.PI/2;  // cylinder axis → Z
+    m.position.set(c.x_mm*mm, c.y_mm*mm, (lv.elevation_mm + (lv.height_mm||3500)/2)*mm);
+    modelGroup.add(m); meshes++; tris += geo.index ? geo.index.count/3 : 12;
+  });
+  (lastIR.walls || []).forEach(w => {
+    const lv = levelMap[w.level] || { elevation_mm: 0, height_mm: 3500 };
+    const h = (lv.height_mm || 3500) * mm;
+    const dx = w.end_mm[0]-w.start_mm[0], dy = w.end_mm[1]-w.start_mm[1];
+    const len = Math.hypot(dx, dy) * mm; if (len < 1e-4) return;
+    const geo = new THREE.BoxGeometry(len, (w.thickness_mm||150)*mm, h);
+    const m = new THREE.Mesh(geo, WALL_MAT());
+    m.rotation.z = Math.atan2(dy, dx);
+    m.position.set((w.start_mm[0]+w.end_mm[0])/2*mm, (w.start_mm[1]+w.end_mm[1])/2*mm, (lv.elevation_mm + (lv.height_mm||3500)/2)*mm);
+    modelGroup.add(m); meshes++; tris += 12;
+  });
+  $('three-cnt').textContent = `meshes ${meshes} · tris ${tris.toLocaleString()} (IR)`;
+}
 </script>
 </body>
 </html>

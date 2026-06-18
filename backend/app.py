@@ -81,3 +81,26 @@ def download(name: str):
     if not path.exists():
         return JSONResponse({"error": "파일 없음"}, status_code=404)
     return FileResponse(path, filename=name)
+
+
+@app.get("/ir")
+def ir():
+    """Plan Audit 2D + 3D 폴백용 IR(JSON). 없으면 404."""
+    path = Path("out") / "model_ir.json"
+    if not path.exists():
+        return JSONResponse({"error": "아직 IR이 없다. Run을 먼저 실행하라."}, status_code=404)
+    return FileResponse(path, media_type="application/json")
+
+
+SAMPLE_DXF = Path("data/지하주차장_1층_평면도.dxf")
+
+
+@app.get("/sample")
+def sample():
+    """번들 샘플 DXF를 analyze한 결과(Sample 버튼용)."""
+    if not SAMPLE_DXF.exists():
+        return JSONResponse({"error": "번들 샘플 DXF가 없다."}, status_code=404)
+    inv = extract_inventory(str(SAMPLE_DXF))
+    inv["server_path"] = str(SAMPLE_DXF)
+    inv["filename"] = SAMPLE_DXF.name
+    return JSONResponse(inv)

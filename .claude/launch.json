@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "workbench",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "uvicorn", "backend.app:app", "--port", "8011"],
+      "port": 8011
+    }
+  ]
+}
