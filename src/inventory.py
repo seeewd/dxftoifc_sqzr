@@ -9,13 +9,16 @@ FLOOR_RE = re.compile(r"(지하\s*\d+\s*층|B\d+F)", re.IGNORECASE)
 DEFAULT_LAYER_NAMES = {"0", "defpoints", "defpoint"}
 
 
+XREF_BIND_RE = re.compile(r"\$\d+\$")
+
+
 def _short_name(name):
     """Strip xref-bind prefixes. AutoCAD xref binds produce either
-    'XREF|Layer' (classic) or 'XREF$0$Layer' (bound/anonymous suffix,
-    compounding per nesting level) - take the last real segment either way."""
+    'XREF|Layer' (classic) or 'XREF$N$Layer' (bound/anonymous suffix, N
+    incrementing per nesting level) - take the last real segment either way."""
     if not name:
         return name
-    return name.split("|")[-1].split("$0$")[-1]
+    return XREF_BIND_RE.split(name.split("|")[-1])[-1]
 
 
 def extract_inventory(path):
