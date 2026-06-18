@@ -9,8 +9,9 @@ from .columns import extract_columns
 from .ifc_writer import write_ifc
 from .ir import build_ir, save_ir
 from .levels import build_levels
-from .load import load_columns
+from .load import load_columns, load_wall_lines
 from .report import validate_and_summarize
+from .walls import extract_walls
 
 
 def run_pipeline(cfg, stream_queue=None):
@@ -21,18 +22,24 @@ def run_pipeline(cfg, stream_queue=None):
     doc = ezdxf.readfile(cfg["input_dxf"])
 
     columns = []
+    kept_roots = None
     if cfg.get("build_elements", {}).get("column", True):
         result = load_columns(doc, cfg)
         for w in result["warnings"]:
             logger.warning(w)
         columns = extract_columns(result["candidates"], cfg)
+        kept_roots = result["kept_roots"]
         logger.info(f"기둥: raw={result['raw_count']} merged={result['merged_count']} dedup후={len(columns)}")
     else:
         logger.info("기둥 비활성, 스킵")
 
     walls = []
     if cfg.get("build_elements", {}).get("wall", False):
-        logger.warning("벽 인식 미구현 — 스킵 (Phase2 예정)")
+        segments = load_wall_lines(doc, cfg, kept_roots)
+        walls = extract_walls(segments, cfg)
+        logger.info(f"벽: 선분={len(segments)} 최종={len(walls)}")
+    else:
+        logger.info("벽 비활성, 스킵")
 
     levels = build_levels(cfg)
     ir = build_ir(cfg, columns, levels, walls)

@@ -20,7 +20,9 @@ def validate_and_summarize(ifc_path, ir, ifc_meta, t0):
         has_project = bool(m.by_type("IfcProject"))
         has_storey = bool(m.by_type("IfcBuildingStorey"))
         ifc_columns = m.by_type("IfcColumn")
-        missing_repr = [c.GlobalId for c in ifc_columns if not c.Representation or not c.ObjectPlacement]
+        ifc_walls = m.by_type("IfcWall")
+        missing_repr = [e.GlobalId for e in (ifc_columns + ifc_walls)
+                        if not e.Representation or not e.ObjectPlacement]
         validation = "PASS" if (has_project and has_storey and not missing_repr) else "FAIL"
         for gid in missing_repr:
             warnings.append(f"Representation/Placement 누락: {gid}")
@@ -28,6 +30,9 @@ def validate_and_summarize(ifc_path, ir, ifc_meta, t0):
             warnings.append(f"schema 불일치: {m.schema}")
         if len(ifc_columns) != len(ir["columns"]):
             warnings.append(f"IfcColumn 개수 불일치: IFC={len(ifc_columns)} IR={len(ir['columns'])}")
+            validation = "FAIL"
+        if len(ifc_walls) != len(ir["walls"]):
+            warnings.append(f"IfcWall 개수 불일치: IFC={len(ifc_walls)} IR={len(ir['walls'])}")
             validation = "FAIL"
 
     elapsed = time.time() - t0

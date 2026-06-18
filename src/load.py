@@ -323,6 +323,44 @@ def _collapse_duplicate_plans(candidates, cfg):
     return kept, kept_roots, warnings
 
 
+def _segments_from_geom(rec):
+    """Split a collected LINE/LWPOLYLINE record into (a, b) endpoint segments."""
+    if rec["type"] == "LINE":
+        return [tuple(rec["pts"])]
+    if rec["type"] == "LWPOLYLINE":
+        pts = rec["pts"]
+        segs = [(a, b) for a, b in zip(pts, pts[1:])]
+        if rec["closed"] and len(pts) > 2:
+            segs.append((pts[-1], pts[0]))
+        return segs
+    return []
+
+
+def load_wall_lines(doc, cfg, kept_roots=None):
+    """Wall-source LINE/LWPOLYLINE -> flat segment list (WCS). Empty
+    wall_source.values means accept-all (every layer/path matches).
+    kept_roots restricts to the plan-merge-deduped roots (None = no restriction);
+    flat (root_idx=-1) segments are always included."""
+    source = cfg.get("wall_source") or {"mode": "layer", "values": []}
+    values = source.get("values") or []
+
+    if values:
+        matcher = make_matcher(source)
+        predicate = lambda layer, path: matcher(None, path, layer)
+    else:
+        predicate = lambda layer, path: True
+
+    geoms = _collect_geometry(doc, cfg, predicate, types=("LINE", "LWPOLYLINE"))
+
+    segments = []
+    for g in geoms:
+        if kept_roots is not None and g["root_idx"] != -1 and g["root_idx"] not in kept_roots:
+            continue
+        for a, b in _segments_from_geom(g):
+            segments.append({"a": a, "b": b, "layer": g["layer"], "handle": g["handle"], "root_idx": g["root_idx"]})
+    return segments
+
+
 def load_columns(doc, cfg):
     source = cfg.get("column_source") or {"mode": "block", "values": cfg.get("column_name_patterns", ["기둥", "col"])}
     matcher = make_matcher(source)

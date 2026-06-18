@@ -104,6 +104,47 @@ def write_ifc(ir, cfg):
         geometry.edit_object_placement(f, product=column, matrix=matrix)
         counts[type_key] = counts.get(type_key, 0) + 1
 
+    wall_types = {}
+    wall_counts = {}
+
+    for w in ir["walls"]:
+        storey = storeys.get(w["level"])
+        if storey is None:
+            log.warning(f"레벨 없음, 스킵: {w['id']}")
+            missing.append(w["id"])
+            continue
+
+        thickness_mm = w.get("thickness_mm")
+        sx, sy = w["start_mm"]
+        ex, ey = w["end_mm"]
+        length_mm = math.hypot(ex - sx, ey - sy)
+        if not thickness_mm or length_mm <= 0:
+            log.warning(f"두께/길이 0, 스킵: {w['id']}")
+            missing.append(w["id"])
+            continue
+
+        wall_type = wall_types.get(thickness_mm)
+        if wall_type is None:
+            wall_type = root.create_entity(f, ifc_class="IfcWallType", predefined_type="STANDARD",
+                                            name=f"WALL-{thickness_mm}")
+            wall_types[thickness_mm] = wall_type
+
+        wall = root.create_entity(f, ifc_class="IfcWall", predefined_type="STANDARD", name=w["id"])
+        type_api.assign_type(f, related_objects=[wall], relating_type=wall_type, should_map_representations=False)
+        spatial.assign_container(f, products=[wall], relating_structure=storey)
+
+        profile = f.create_entity("IfcRectangleProfileDef", ProfileType="AREA", ProfileName=None,
+                                   Position=None, XDim=length_mm / 1000.0, YDim=thickness_mm / 1000.0)
+        depth_m = heights[w["level"]] / 1000.0
+        rep = geometry.add_profile_representation(f, context=body_ctx, profile=profile, depth=depth_m)
+        geometry.assign_representation(f, product=wall, representation=rep)
+
+        mx, my = (sx + ex) / 2.0, (sy + ey) / 2.0
+        rot_deg = math.degrees(math.atan2(ey - sy, ex - sx))
+        matrix = _placement_matrix(mx / 1000.0, my / 1000.0, elevations[w["level"]] / 1000.0, rot_deg)
+        geometry.edit_object_placement(f, product=wall, matrix=matrix)
+        wall_counts[thickness_mm] = wall_counts.get(thickness_mm, 0) + 1
+
     out_dir = cfg.get("out_dir", "out")
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, "model.ifc")
@@ -113,7 +154,8 @@ def write_ifc(ir, cfg):
         "path": path,
         "total_entities": len(list(f)),
         "columns": sum(counts.values()),
-        "walls": 0,
+        "walls": sum(wall_counts.values()),
         "types": counts,
+        "wall_types": wall_counts,
         "missing": missing,
     }

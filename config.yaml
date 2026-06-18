@@ -8,7 +8,7 @@ ifc_schema: "IFC4"
 # ── 구축할 인식 요소 ──────────────────────────────
 build_elements:
   column:  true      # Phase 1 (구현)
-  wall:    false     # Phase 2 (미구현 — 스킵)
+  wall:    true      # Phase 2 (구현)
   grid:    false     # 준비중
   slab:    false     # 준비중
   beam:    false     # 준비중
@@ -32,7 +32,7 @@ column_source:
   values: ["기둥", "col"]
 wall_source:
   mode: layer
-  values: []
+  values: ["wal"]
 
 # ── 기둥 인식 파라미터 ────────────────────────────
 column_name_patterns: ["기둥", "col"]   # (구버전 호환 폴백)
@@ -45,7 +45,7 @@ footprint_exclude_layers: ["DEFPOINT", "DEFPOINTS"]
 # 골조(CON) 계통 층 필터: 최근접 CON-*-B?F 태그 기준
 con_floor_tag: "B2F"               # 이 태그의 CON 골조만 채택 (B1F 제외)
 
-# ── 벽 (Phase 2, 미사용) ──────────────────────────
+# ── 벽 (Phase 2) ──────────────────────────────────
 wall_thickness_min_mm: 100
 wall_thickness_max_mm: 600
 wall_parallel_tol_deg: 1.0
