@@ -9,4 +9,6 @@ out/
 *.ifc
 *.log
 
+data/uploads/
+
 .DS_Store

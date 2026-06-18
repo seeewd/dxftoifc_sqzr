@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POC · 2D→BIM</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #F4F4F5;
+    --border: #E4E4E7;
+    --text: #18181B;
+    --muted: #71717A;
+    --primary: #18181B;
+    --primary-hover: #27272A;
+    --disabled: #A1A1AA;
+    --accent: #2563EB;
+    --warn: #B45309;
+    --error: #B91C1C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 24px;
+  }
+  header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+  }
+  #status-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  #status-badge.running { color: var(--accent); border-color: var(--accent); }
+  #status-badge.done { color: var(--text); border-color: var(--text); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge-beta {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .badge-soon {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    color: var(--disabled);
+  }
+  .dropzone {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .dropzone.drag { border-color: var(--text); color: var(--text); }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row .k { color: var(--muted); }
+  .warn-box {
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 8px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: var(--warn);
+    font-size: 12px;
+  }
+  .field-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  select, input[type=text], input[type=number] {
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+  }
+  label.toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  label.toggle:last-child { border-bottom: none; }
+  label.toggle.disabled { color: var(--disabled); opacity: .5; }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+  }
+  .chip {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip.selected {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .chip.suggested:not(.selected) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  table.levels {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  table.levels th, table.levels td {
+    border-bottom: 1px solid var(--border);
+    padding: 6px 4px;
+    text-align: left;
+  }
+  table.levels input {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  .btn {
+    font: inherit;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--surface); }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    width: 100%;
+    padding: 10px;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary:disabled {
+    background: var(--disabled);
+    border-color: var(--disabled);
+    cursor: not-allowed;
+  }
+  .btn-sm { padding: 4px 8px; font-size: 12px; }
+  .advanced-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .advanced-grid .field-row { margin-bottom: 0; }
+  #log-panel {
+    background: #18181B;
+    color: #E4E4E7;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px;
+    height: 240px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .log-line.WARNING { color: #FBBF24; }
+  .log-line.ERROR { color: #F87171; }
+  .log-line.DEBUG { color: #A1A1AA; }
+  .downloads {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  small.hint { color: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>POC · 2D→BIM</h1>
+    <span id="status-badge">대기</span>
+  </header>
+
+  <section class="card">
+    <h2>① 입력 파일</h2>
+    <div class="dropzone" id="dropzone">DXF 파일을 끌어놓거나 클릭해서 선택</div>
+    <input type="file" id="file-input" accept=".dxf" style="display:none">
+    <div id="analyze-summary" style="display:none; margin-top:12px;"></div>
+  </section>
+
+  <section class="card">
+    <h2>② 요소 매핑</h2>
+    <div>
+      <strong style="font-size:12px;">기둥 (column)</strong>
+      <div class="field-row">
+        <select id="column-mode">
+          <option value="block">block</option>
+          <option value="layer">layer</option>
+          <option value="path">path</option>
+        </select>
+      </div>
+      <div class="chips" id="column-chips"></div>
+      <input type="text" id="column-path-input" placeholder="경로 텍스트 (콤마 구분)" style="display:none; width:100%;">
+    </div>
+    <div style="margin-top:16px;">
+      <strong style="font-size:12px;">벽 (wall)</strong>
+      <div class="field-row">
+        <select id="wall-mode">
+          <option value="layer">layer</option>
+          <option value="block">block</option>
+          <option value="path">path</option>
+        </select>
+      </div>
+      <div class="chips" id="wall-chips"></div>
+      <input type="text" id="wall-path-input" placeholder="경로 텍스트 (콤마 구분)" style="display:none; width:100%;">
+      <small class="hint">아무것도 선택하지 않으면 평면 전체 선분을 대상으로 한다.</small>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>③ 인식 요소</h2>
+    <label class="toggle">
+      <input type="checkbox" id="toggle-column" checked> 기둥
+    </label>
+    <label class="toggle">
+      <input type="checkbox" id="toggle-wall" checked> 벽 <span class="badge-beta">베타</span>
+    </label>
+    <label class="toggle disabled">
+      <input type="checkbox" disabled> 그리드 <span class="badge-soon">준비중</span>
+    </label>
+    <label class="toggle disabled">
+      <input type="checkbox" disabled> 슬래브 <span class="badge-soon">준비중</span>
+    </label>
+    <label class="toggle disabled">
+      <input type="checkbox" disabled> 보 <span class="badge-soon">준비중</span>
+    </label>
+    <label class="toggle disabled">
+      <input type="checkbox" disabled> 문/창 <span class="badge-soon">준비중</span>
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>④ 레벨/층고</h2>
+    <table class="levels" id="levels-table">
+      <thead><tr><th>이름</th><th>EL(mm)</th><th>층고(mm)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn btn-sm" id="add-level-row">+ 행 추가</button>
+    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+      <small class="hint">여러 층 한번에</small>
+      <div class="field-row" style="margin-top:6px;">
+        <input type="number" id="batch-count" placeholder="N" style="width:60px;">
+        <input type="number" id="batch-start-el" placeholder="시작 EL(mm)" style="width:100px;">
+        <input type="number" id="batch-height" placeholder="층고(mm)" style="width:90px;" value="3500">
+        <input type="text" id="batch-prefix" placeholder="접두사" style="width:60px;" value="F">
+        <button class="btn btn-sm" id="batch-add">일괄추가</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>⑤ 고급</h2>
+    <div class="advanced-grid">
+      <label class="field-row"><input type="checkbox" id="adv-recenter" checked> recenter</label>
+      <div class="field-row"><span>dedup_tol_mm</span><input type="number" id="adv-dedup-tol" value="100" style="width:80px;"></div>
+      <div class="field-row">
+        <span>log_level</span>
+        <select id="adv-log-level">
+          <option value="DEBUG" selected>DEBUG</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <button class="btn-primary" id="run-btn" disabled>구축 실행</button>
+
+  <section class="card" id="run-section" style="display:none; margin-top:16px;">
+    <h2>실행 로그</h2>
+    <div id="log-panel"></div>
+    <div id="run-result"></div>
+    <div class="downloads" id="downloads" style="display:none;">
+      <a class="btn btn-sm" href="/download/model.ifc" download>model.ifc</a>
+      <a class="btn btn-sm" href="/download/model_ir.json" download>model_ir.json</a>
+      <a class="btn btn-sm" href="/download/debug.log" download>debug.log</a>
+    </div>
+  </section>
+</div>
+
+<script>
+let inventory = null;
+let serverPath = null;
+let columnSuggestion = null;
+let wallSuggestion = null;
+
+const statusBadge = document.getElementById('status-badge');
+function setStatus(text, cls) {
+  statusBadge.textContent = text;
+  statusBadge.className = cls || '';
+}
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) analyzeFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) analyzeFile(fileInput.files[0]);
+});
+
+async function analyzeFile(file) {
+  dropzone.textContent = `분석 중... (${file.name})`;
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/analyze', { method: 'POST', body: form });
+  if (!res.ok) {
+    dropzone.textContent = '분석 실패. 다시 시도하라.';
+    return;
+  }
+  inventory = await res.json();
+  serverPath = inventory.server_path;
+  dropzone.textContent = `${inventory.filename} 분석 완료 (다른 파일로 교체하려면 클릭)`;
+  renderAnalyzeSummary();
+  renderChips();
+  document.getElementById('run-btn').disabled = false;
+}
+
+function renderAnalyzeSummary() {
+  const el = document.getElementById('analyze-summary');
+  el.style.display = 'block';
+  const rows = [
+    ['단위 (INSUNITS)', inventory.units],
+    ['패러다임', inventory.paradigm],
+    ['레이어 수', `${inventory.layer_total} (${inventory.layer_state})`],
+    ['블록 수', inventory.block_total],
+  ];
+  let html = rows.map(([k, v]) => `<div class="summary-row"><span class="k">${k}</span><span>${v}</span></div>`).join('');
+  el.innerHTML = html;
+
+  if (inventory.plane_hint && inventory.plane_hint.length > 1) {
+    const warn = document.createElement('div');
+    warn.className = 'warn-box';
+    warn.textContent = `평면 인스턴스 후보가 ${inventory.plane_hint.length}종 발견됨 — 다중 평면일 수 있다 (자동 선택 UI 없음).`;
+    el.appendChild(warn);
+  }
+}
+
+function chipLabel(kind, candidate) {
+  if (kind === 'layer') return `${candidate.short} (${candidate.count})`;
+  return `${candidate.name}${candidate.w ? ` ${candidate.w}x${candidate.d}` : ''} (${candidate.count})`;
+}
+
+function renderChips() {
+  columnSuggestion = inventory.suggestions.column;
+  wallSuggestion = inventory.suggestions.wall;
+  document.getElementById('column-mode').value = columnSuggestion.mode;
+  document.getElementById('wall-mode').value = wallSuggestion.mode;
+  renderChipGroup('column');
+  renderChipGroup('wall');
+}
+
+function candidatesFor(kind) {
+  const mode = document.getElementById(`${kind}-mode`).value;
+  if (mode === 'layer') {
+    return (inventory.layers || []).filter(l => l.valid).map(l => ({ value: l.short, label: chipLabel('layer', l) }));
+  }
+  if (mode === 'block') {
+    return (inventory.blocks || []).map(b => ({ value: b.name, label: chipLabel('block', b) }));
+  }
+  return [];
+}
+
+function renderChipGroup(kind) {
+  const mode = document.getElementById(`${kind}-mode`).value;
+  const chipsEl = document.getElementById(`${kind}-chips`);
+  const pathInput = document.getElementById(`${kind}-path-input`);
+  chipsEl.style.display = mode === 'path' ? 'none' : 'flex';
+  pathInput.style.display = mode === 'path' ? 'block' : 'none';
+
+  if (mode === 'path') { chipsEl.innerHTML = ''; return; }
+
+  const suggestion = kind === 'column' ? columnSuggestion : wallSuggestion;
+  const suggestedValues = (suggestion && suggestion.mode === mode) ? (suggestion.values || []) : [];
+  const cands = candidatesFor(kind);
+  const seen = new Set();
+  chipsEl.innerHTML = '';
+  cands.forEach(c => {
+    const key = c.value.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.dataset.value = c.value;
+    chip.textContent = c.label;
+    if (suggestedValues.some(v => v.toLowerCase() === key)) {
+      chip.classList.add('selected', 'suggested');
+    }
+    chip.addEventListener('click', () => chip.classList.toggle('selected'));
+    chipsEl.appendChild(chip);
+  });
+}
+
+document.getElementById('column-mode').addEventListener('change', () => renderChipGroup('column'));
+document.getElementById('wall-mode').addEventListener('change', () => renderChipGroup('wall'));
+
+function sourceOf(kind) {
+  const mode = document.getElementById(`${kind}-mode`).value;
+  if (mode === 'path') {
+    const text = document.getElementById(`${kind}-path-input`).value.trim();
+    const values = text ? text.split(',').map(s => s.trim()).filter(Boolean) : [];
+    return { mode, values };
+  }
+  const chipsEl = document.getElementById(`${kind}-chips`);
+  const values = Array.from(chipsEl.querySelectorAll('.chip.selected')).map(c => c.dataset.value);
+  return { mode, values };
+}
+
+// ── 레벨 테이블 ──────────────────────────────────
+const levelsBody = document.querySelector('#levels-table tbody');
+
+function addLevelRow(name, el, height) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="lv-name" value="${name ?? ''}"></td>
+    <td><input type="number" class="lv-el" value="${el ?? 0}"></td>
+    <td><input type="number" class="lv-height" value="${height ?? 3500}"></td>
+    <td><button class="btn btn-sm lv-remove">삭제</button></td>
+  `;
+  tr.querySelector('.lv-remove').addEventListener('click', () => tr.remove());
+  levelsBody.appendChild(tr);
+}
+addLevelRow('B2', -7000, 3500);
+
+document.getElementById('add-level-row').addEventListener('click', () => addLevelRow('', 0, 3500));
+
+document.getElementById('batch-add').addEventListener('click', () => {
+  const n = parseInt(document.getElementById('batch-count').value, 10) || 0;
+  const startEl = parseFloat(document.getElementById('batch-start-el').value) || 0;
+  const height = parseFloat(document.getElementById('batch-height').value) || 3500;
+  const prefix = document.getElementById('batch-prefix').value || 'F';
+  for (let i = 0; i < n; i++) {
+    addLevelRow(`${prefix}${i + 1}`, startEl + i * height, height);
+  }
+});
+
+function collectLevels() {
+  return Array.from(levelsBody.querySelectorAll('tr')).map(tr => ({
+    name: tr.querySelector('.lv-name').value || 'L',
+    elevation_mm: parseFloat(tr.querySelector('.lv-el').value) || 0,
+    height_mm: parseFloat(tr.querySelector('.lv-height').value) || 3500,
+  }));
+}
+
+// ── config 빌드 ──────────────────────────────────
+function buildConfig() {
+  return {
+    input_dxf: serverPath,
+    units: inventory ? inventory.units : 'mm',
+    ifc_schema: 'IFC4',
+    build_elements: {
+      column: document.getElementById('toggle-column').checked,
+      wall: document.getElementById('toggle-wall').checked,
+      grid: false, slab: false, beam: false, opening: false,
+    },
+    column_source: sourceOf('column'),
+    wall_source: sourceOf('wall'),
+    levels: collectLevels(),
+    repeat_floors: { enabled: false, count: 1, start_elevation_mm: 0, height_mm: 3500, name_prefix: 'F' },
+    column_footprint_min_mm: 200,
+    column_footprint_max_mm: 2000,
+    footprint_exclude_text: true,
+    footprint_exclude_layers: ['DEFPOINT', 'DEFPOINTS'],
+    column_name_patterns: ['기둥', 'col'],
+    wall_thickness_min_mm: 100,
+    wall_thickness_max_mm: 600,
+    wall_parallel_tol_deg: 1.0,
+    wall_overlap_min_ratio: 0.3,
+    wall_min_length_mm: 150,
+    wall_join_gap_mm: 300,
+    wall_join_extend_mm: 400,
+    recenter: document.getElementById('adv-recenter').checked,
+    dedup_tol_mm: parseFloat(document.getElementById('adv-dedup-tol').value) || 100,
+    depth_guard: 10,
+    log_level: document.getElementById('adv-log-level').value,
+    out_dir: 'out',
+  };
+}
+
+// ── 실행 + SSE ───────────────────────────────────
+const logPanel = document.getElementById('log-panel');
+const runBtn = document.getElementById('run-btn');
+
+function appendLog(line) {
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  const m = line.match(/\s(DEBUG|INFO|WARNING|ERROR)\s/);
+  if (m) div.classList.add(m[1]);
+  div.textContent = line;
+  logPanel.appendChild(div);
+  logPanel.scrollTop = logPanel.scrollHeight;
+}
+
+runBtn.addEventListener('click', async () => {
+  if (!serverPath) return;
+  runBtn.disabled = true;
+  setStatus('실행중', 'running');
+  document.getElementById('run-section').style.display = 'block';
+  document.getElementById('downloads').style.display = 'none';
+  document.getElementById('run-result').textContent = '';
+  logPanel.innerHTML = '';
+
+  const cfg = buildConfig();
+  const res = await fetch('/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config: cfg }),
+  });
+
+  if (res.status === 409) {
+    appendLog('이미 실행 중인 작업이 있다.');
+    setStatus('대기');
+    runBtn.disabled = false;
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const events = buf.split('\n\n');
+    buf = events.pop();
+    for (const evt of events) {
+      const lines = evt.split('\n');
+      let eventName = 'message';
+      let dataStr = '';
+      for (const l of lines) {
+        if (l.startsWith('event:')) eventName = l.slice(6).trim();
+        if (l.startsWith('data:')) dataStr = l.slice(5).trim();
+      }
+      if (!dataStr) continue;
+      const data = JSON.parse(dataStr);
+      if (eventName === 'done') {
+        setStatus('완료', 'done');
+        document.getElementById('run-result').textContent = data.summary;
+        document.getElementById('downloads').style.display = 'flex';
+        runBtn.disabled = false;
+      } else if (eventName === 'failed') {
+        setStatus('실패');
+        appendLog(`[FAILED] ${data.error}`);
+        runBtn.disabled = false;
+      } else {
+        appendLog(data.line);
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
