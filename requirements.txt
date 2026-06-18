@@ -1,0 +1,8 @@
+ezdxf>=1.4
+ifcopenshell>=0.8.5
+shapely
+numpy
+fastapi
+uvicorn
+pyyaml
+python-multipart

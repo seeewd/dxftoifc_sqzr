@@ -1,0 +1,12 @@
+.claude/settings.local.json
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+out/
+*.ifc
+*.log
+
+.DS_Store

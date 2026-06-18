@@ -1,0 +1,64 @@
+# POC_2D_TO_BIM 실행 설정 (UI가 생성하거나 손수 편집)
+# 값은 Stage0 실측(2026-06-14)으로 검증됨. CLAUDE.md "Stage0 실측 검증 결과" 참조.
+
+input_dxf: "data/지하주차장_1층_평면도.dxf"
+units: mm
+ifc_schema: "IFC4"
+
+# ── 구축할 인식 요소 ──────────────────────────────
+build_elements:
+  column:  true      # Phase 1 (구현)
+  wall:    false     # Phase 2 (미구현 — 스킵)
+  grid:    false     # 준비중
+  slab:    false     # 준비중
+  beam:    false     # 준비중
+  opening: false     # 준비중
+
+# ── 레벨 ──────────────────────────────────────────
+levels:
+  - { name: "B2", elevation_mm: -7000, height_mm: 3500 }
+
+repeat_floors:
+  enabled: false
+  count: 1
+  start_elevation_mm: -7000
+  height_mm: 3500
+  name_prefix: "F"
+
+# ── 요소 소스 규칙 (signal-agnostic, DEV_SPEC §0) ──
+# mode: layer | block | path  /  values 비면 mode별 디폴트
+column_source:
+  mode: block
+  values: ["기둥", "col"]
+wall_source:
+  mode: layer
+  values: []
+
+# ── 기둥 인식 파라미터 ────────────────────────────
+column_name_patterns: ["기둥", "col"]   # (구버전 호환 폴백)
+column_footprint_min_mm: 200
+column_footprint_max_mm: 2000
+# footprint 측정 시 제외할 것 (Stage0 검증: TEXT 라벨이 bbox 부풀림)
+footprint_exclude_text: true
+footprint_exclude_layers: ["DEFPOINT", "DEFPOINTS"]
+
+# 골조(CON) 계통 층 필터: 최근접 CON-*-B?F 태그 기준
+con_floor_tag: "B2F"               # 이 태그의 CON 골조만 채택 (B1F 제외)
+
+# ── 벽 (Phase 2, 미사용) ──────────────────────────
+wall_thickness_min_mm: 100
+wall_thickness_max_mm: 600
+wall_parallel_tol_deg: 1.0
+wall_overlap_min_ratio: 0.3
+wall_min_length_mm: 150              # 벽 최소 길이(짧은 칸막이벽 보존; 길이<두께도 제외)
+wall_join_gap_mm: 300                # 정션: 공선 조각 병합 최대 갭 (UPDATE 0001)
+wall_join_extend_mm: 400             # 정션: 코너 교차연장 최대 거리 (UPDATE 0001)
+
+# ── 좌표/디버그 ───────────────────────────────────
+recenter: true
+dedup_tol_mm: 100
+depth_guard: 10
+log_level: "DEBUG"                  # DEBUG | INFO | WARNING
+
+# ── 출력 ──────────────────────────────────────────
+out_dir: "out"
