@@ -697,6 +697,9 @@ function initThree() {
   camera.position.set(40, 40, 40);
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.screenSpacePanning = true;
+  // 좌드래그 = 화면 평면으로 카메라 이동(pan), 우드래그 = 회전, 휠 = 줌
+  controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   scene.add(new THREE.AmbientLight(0xffffff, 0.75));
   const dir = new THREE.DirectionalLight(0xffffff, 0.7); dir.position.set(50, 80, 30); scene.add(dir);
   threeReady = true;
