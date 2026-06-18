@@ -711,10 +711,11 @@ function resizeThree() {
   renderer.setSize(r.width, r.height, false);
   camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
 }
-function resetModelGroup() {
+function resetModelGroup(zUp) {
   if (modelGroup) scene.remove(modelGroup);
   modelGroup = new THREE.Group();
-  modelGroup.rotation.x = -Math.PI / 2;  // Z-up(IFC) → Y-up(three)
+  // web-ifc는 정점을 이미 Y-up으로 변환해 준다(rot 0). IR 폴백 박스는 Z-up이라 -90° 보정 필요.
+  modelGroup.rotation.x = zUp ? -Math.PI / 2 : 0;
   scene.add(modelGroup);
 }
 function fitCamera() {
@@ -733,13 +734,13 @@ async function loadThree() {
   initThree();
   $('three-overlay').style.display = 'grid';
   $('three-overlay').textContent = 'model.ifc 로딩(web-ifc)...';
-  resetModelGroup();
+  resetModelGroup(false);  // web-ifc 정점은 이미 Y-up
   try {
     await loadViaWebIfc();
     $('three-note').textContent = 'web-ifc';
   } catch (e) {
     console.warn('web-ifc 실패, IR 박스 폴백:', e);
-    resetModelGroup();
+    resetModelGroup(true);  // IR 박스는 Z-up → 보정
     loadViaIR();
     $('three-note').textContent = '(fallback: IR boxes)';
   }
